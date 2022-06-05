@@ -1,0 +1,25 @@
+<UI version="4.0" >
+ <class>ViewerClass</class>
+ <widget class="QWidget" name="ViewerClass" >
+  <property name="objectName" >
+   <string notr="true">ViewerClass</string>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Viewer</string>
+  </property>$centralwidget$
+ </widget>
+ <layoutDefault spacing="6" margin="11" />
+ <pixmapfunction></pixmapfunction>
+ <resources>
+   <include location="Viewer.qrc"/>
+ </resources>
+ <connections/>
+</UI>
