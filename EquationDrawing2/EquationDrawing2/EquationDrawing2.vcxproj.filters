@@ -23,16 +23,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <QtRcc Include="Viewer.qrc">
+    <QtRcc Include="Drawer.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
-    <QtUic Include="Viewer.ui">
+    <QtUic Include="Drawer.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtMoc Include="Viewer.h">
+    <QtMoc Include="Drawer.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <ClCompile Include="Viewer.cpp">
+    <ClCompile Include="Drawer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
