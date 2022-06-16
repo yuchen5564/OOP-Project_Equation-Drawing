@@ -8,5 +8,7 @@
         <file>pic/check.png</file>
         <file>pic/cannotsee.png</file>
         <file>pic/cansee.png</file>
+        <file>pic/mid.png</file>
+        <file>pic/define.png</file>
     </qresource>
 </RCC>

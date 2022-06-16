@@ -6,6 +6,7 @@
 #include <QPixmap>
 #include <QListWidget>
 #include <QPushButton>
+#include <vector>
 #include <iostream>
 using namespace std;
 
@@ -16,7 +17,8 @@ class Drawer : public QWidget
 public:
     Drawer(QWidget *parent = Q_NULLPTR);
     void creatCoordinates(); //劃出坐標系
-    void drawFunction(string function = " ", QColor color = Qt::red);
+    template<class T>
+    void drawFunction(T function = " ", QColor color = Qt::red);
 
     void paintEvent(QPaintEvent* event);
     void wheelEvent(QWheelEvent* event);
@@ -27,12 +29,16 @@ public:
     
 
 public slots:
+    /*=== 函數 ===*/
     void addFunction_slot();
     void removeFunction_slot();
     void editFunction_slot();
     void showFunction_slot();
-    void notShowFunction_slot();
     void pickColor_slot();
+    /*=== 變數 ===*/
+    void addDefine_slot();
+    void removeDefine_slot();
+    void editDefine_slot();
 
 private:
     Ui::DrawerClass ui;
@@ -40,6 +46,7 @@ private:
     QImage graph;
 
     qreal scroll = 1;
+    qreal scroll2 = 1;
 
     bool m_press = false;
     QPoint oldPoint;
@@ -47,8 +54,9 @@ private:
     QPoint mid = { 0,0 };
     QPixmap* pImg;
     //QPainter* painter;
-    QListWidget* funcList, * showList;
-    QPushButton* addBtn, * removeBtn, * editBtn;
-    QPushButton* showBtn, * notShowBtn, * pickColorBtn;
+    QListWidget* funcList, * defineList;
+    QPushButton* addFuncBtn, * removeFuncBtn, * editFuncBtn;
+    QPushButton* showFuncBtn, * pickColorBtn;
+    QPushButton* addDefineBtn, * removeDefineBtn, * editDefineBtn;
     int cc = 0;
 };
