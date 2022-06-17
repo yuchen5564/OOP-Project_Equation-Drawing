@@ -10,5 +10,7 @@
         <file>pic/cansee.png</file>
         <file>pic/mid.png</file>
         <file>pic/define.png</file>
+        <file>pic/icon.png</file>
+        <file>pic/icon2.png</file>
     </qresource>
 </RCC>

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <QColorDialog>
 
+#include <cmath>
 #include <cstdlib> /* 亂數相關函數 */
 #include <ctime>   /* 時間相關函數 */
 
@@ -14,6 +15,9 @@ Drawer::Drawer(QWidget *parent)
 {
     ui.setupUi(this);
     
+    setWindowTitle("Equation Drawing");
+    setWindowIcon(QIcon(":/Drawer/pic/icon2.png"));
+
     pImg = new QPixmap(800, 600);
     pImg->fill();
 
@@ -84,6 +88,8 @@ Drawer::Drawer(QWidget *parent)
     connect(addDefineBtn, SIGNAL(clicked(bool)), this, SLOT(addDefine_slot()));
     connect(removeDefineBtn, SIGNAL(clicked(bool)), this, SLOT(removeDefine_slot()));
     connect(editDefineBtn, SIGNAL(clicked(bool)), this, SLOT(editDefine_slot()));
+
+    parser = Parser();
 }
 
 //繪製坐標軸
@@ -102,15 +108,19 @@ void Drawer::creatCoordinates()
     //memo: 網格格線依放大倍率調整
     painter.setPen(QPen(QColor(188, 194, 204))); //灰色筆刷
 
-    int step = 40 * scroll * scroll2;
+    int step = 40 * scroll;
+    if (scroll == 0.5) {
+        step *= 4;
+    }
+    
     //cout << step << endl;
     for (int i = 1; i <= 800 + abs(400 - mid.x() - movePos.x()); i+=step) //x軸方向線條
     {
         //cout << i << endl;
         int line = abs(300 - mid.y() - movePos.y());
         if (step > 100) {
-            painter.drawLine(i/2, -h - line, i/2 , h + line);
-            painter.drawLine(-i/2, -h - line, -i/2 , h + line);
+            painter.drawLine(i - step / 2, -h - line, i - step / 2, h + line);
+            painter.drawLine(-i - step / 2, -h - line, -i - step / 2, h + line);
         }
         
             painter.drawLine(i, -h - line, i, h + line);
@@ -121,8 +131,8 @@ void Drawer::creatCoordinates()
     {
         int line = abs(400 - mid.x() - movePos.x());
         if (step > 100) {
-            painter.drawLine(-w - line, i/2, w + line, i/2);
-            painter.drawLine(-w - line, -i/2, w + line, -i/2);
+            painter.drawLine(-w - line, i - step / 2, w + line, i - step / 2);
+            painter.drawLine(-w - line, -i - step / 2, w + line, -i - step / 2);
         }
         painter.drawLine(-w - line, i , w + line, i );
         painter.drawLine(-w - line, -i , w + line, -i );
@@ -142,10 +152,13 @@ void Drawer::creatCoordinates()
             counter++;
             continue;
         }
+        
         painter.drawLine(i, 0, i, 8);//X軸正向刻度，箭頭的邊長設為8個畫素
         painter.drawText(i, 0, QString::number(counter * scroll2)); //X軸正向刻度座標
         painter.drawLine(-i, 0, -i, 8); //X軸負向刻度
         painter.drawText(-i, 0, QString::number(-counter * scroll2)); //X軸負向刻度座標 //* stepX
+       
+        
         counter++;
     }
     counter = 0;
@@ -187,7 +200,7 @@ void Drawer::paintEvent(QPaintEvent* event)
     //cout << showList->count() << endl;
     for (int i = 0; i < funcList->count(); i++) {
         if (funcList->item(i)->background() != QColor(255,255,255)) { //以背景顏色來判別是否顯示
-            drawFunction(i, funcList->item(i)->foreground().color());
+            drawFunction(funcList->item(i)->text().toStdString(), funcList->item(i)->foreground().color());
         }
     }
 
@@ -198,36 +211,38 @@ void Drawer::paintEvent(QPaintEvent* event)
     update();
 }
 
-typedef struct point1 {
-    double x;
-    double y;
-};
-
-template<class T>
-void Drawer::drawFunction(T function, QColor color)
+void Drawer::drawFunction(string function, QColor color)
 {
-    //在此呼叫算式解析 vector --> QPointF
-    qreal mult = 800 / 20 * scroll ;  //放大倍數
-    /*vector<point1> list;
-    function(vector<point> *list, vector<point1> *ㄔ);*/
-    /*=== For Test (begin) ===*/
-    QList<QPointF>points;
-    qreal t = -40, y;
-    for (int i = 0; i < 800; i++) {
-        
-        y = -1/pow(t - 1, 2);
-        //if (t-1 == 0) cout << "1\n";
-        //y = qSin(t);
-        //cout << y <<"\t"<< - 1 * y * mult << endl;
-        //cout << t << "\t" << y<< endl;
-        //points.push_back({ t * mult,y * mult});
-        cout << points << endl;
-        t += 0.1;
+    
+    vector<Point> point;
+    point.clear();
+    //cout << "========================================\n";
+    parser.calculate(function, &point);
+    //vector<Point>::iterator i;
+    /*for (i = point.begin(); i != point.end(); i++) {
+        cout << i->x << "\t" << i->y << endl;
+    }*/
+
+    qreal mult = 40 * scroll;  //放大倍數
+    if (scroll == 0.5) {
+        mult =  80 / scroll2;
     }
-    //QPainter painter(pImg);
-    //painter.translate(400 - mid.x() - movePos.x(), 300 - mid.y() - movePos.y()); //設置中心點
-    //painter.setPen(QPen(color, 5));
-    //painter.drawLine(function*mult, -600 - abs(300 - mid.y() - movePos.y()), function * mult, 600 + abs(300 - mid.y() - movePos.y())); // 繪製X軸
+    vector<QPointF>points;
+    vector<Point>::iterator i;
+    for (i = point.begin(); i != point.end(); i++) {
+        points.push_back({ i->x * mult,i->y * mult * (-1)});
+    }
+    /*=== For Test (begin) ===*/
+    /*
+    double t = -40, y;
+    for (int i = 0; i < 1600; i++) {
+        y = -pow(sin(t),cos(t));
+        
+        points.push_back({ t * mult,y * mult});
+        //cout << points << endl;
+        t += 0.05;
+    }*/
+
     /*=== For Test (end) ===*/
     
     /*=== [Warnning] 以下請勿刪除！ ===*/
@@ -242,19 +257,27 @@ void Drawer::drawFunction(T function, QColor color)
     {
         
         QPointF sp = points[i];
+        if (isnan(sp.y())) {
+            painter.drawPath(path); //劃出路徑
+            path.clear();
+            path = QPainterPath(points[i + 1]);
+            continue;
+        }
         //cout << sp.x() << "\t" << sp.y() << endl;
         QPointF ep = points[i + 1];
         QPointF c1 = (QPointF((sp.x() + ep.x()) / 2, (sp.y() + ep.y()) / 2));
         //QPointF c2 = c1;
         
+        
+
         if (sp.y() >= 0 && ep.y() <= 0 && sp.y()-ep.y()>10*mult) { //分母=0 Type 1
-            cout << "..\n";
+            //cout << "..\n";
             painter.drawPath(path); //劃出路徑
             path.clear();
             path = QPainterPath(points[i + 1]);
         }
         else if (sp.y() <= 0 && ep.y() >= 0 && ep.y() - sp.y() > 10*mult) { //分母=0 Type 2
-            cout << "..\n";
+            //cout << "..\n";
             painter.drawPath(path); //劃出路徑
             path.clear();
             path = QPainterPath(points[i + 1]);
@@ -278,34 +301,18 @@ void Drawer::wheelEvent(QWheelEvent* event)
         pImg->fill();
         if (scroll == 0.5) {
             scroll = 0.5;
-            
             if (event->angleDelta().y() > 0) {
-                if (scroll2 == 1) {
-                    scroll += 0.5;
-                }
-                else {
-                    scroll2--;
-                }
-                
+                if (scroll2 == 1) scroll += 0.5;
+                else scroll2-=0.5;
             }
             if (event->angleDelta().y() < 0) {
-                scroll2++;
+                scroll2+=0.5;
             }
         }
         else {
-            if (event->angleDelta().y() > 0) {
-                //cout << "++";
-                scroll = scroll + 0.5;
-            }
-            if (event->angleDelta().y() < 0) {
-                //cout << "--";
-                scroll = scroll - 0.5;
-                
-            }
+            if (event->angleDelta().y() > 0) scroll = scroll + 0.5;
+            if (event->angleDelta().y() < 0) scroll = scroll - 0.5;
         }
-        
-        
-        
         cout << scroll <<" "<<scroll2 << endl;
     }
     
@@ -337,36 +344,23 @@ void Drawer::mouseMoveEvent(QMouseEvent* event)
     pImg->fill();
     QPoint nowPoint = event->pos();
     movePos = { oldPoint.x() - nowPoint.x(),oldPoint.y() - nowPoint.y() };
-    //cout << event->pos().x() << " " << event->pos().y() << endl;
 }
 
 void Drawer::addFunction_slot() {
-    QListWidgetItem* item = new QListWidgetItem("y = " + QString::number(cc));
+    QListWidgetItem* item = new QListWidgetItem("y = x");
     item->setFont(QFont("Consolas", 15));
     item->setSizeHint(QSize(10, 30));
     item->setIcon(QIcon(":/Drawer/pic/cansee.png"));
     item->setBackground(QBrush(QColor(211, 218, 219)));
     
-
-    /*srand(time(NULL));
-    int x = rand() % 20;*/
     item->setForeground(Qt::GlobalColor(14));
-    //cout << item << endl;
     funcList->addItem(item);
-
-    /*QListWidgetItem* item2 = item;
-    showList->addItem(item2);*/
-    cc++;
+    //cc++;
 }
 
 void Drawer::removeFunction_slot()
 {
     QListWidgetItem* nowSelect = funcList->currentItem();
-    
-    /*if (nowSelect != nullptr) {
-        cout << nowSelect->text().toStdString() << endl;
-    }*/
-
     delete nowSelect;
 }
 
@@ -404,12 +398,10 @@ void Drawer::showFunction_slot()
     QListWidgetItem* nowSelect = funcList->currentItem();
     if (nowSelect != nullptr) {
         if (nowSelect->background() == QColor(211, 218, 219)) { //選擇當下為顯示，切換為隱藏
-            //showBtn->setIcon(QIcon(":/Drawer/pic/cannotsee.png"));
             nowSelect->setIcon(QIcon(":/Drawer/pic/cannotsee.png"));
             nowSelect->setBackground(QColor(255, 255, 255));
         }
         else if (nowSelect->background() == QColor(255, 255, 255)) { //選擇當下為隱藏，切換為顯示
-            //showBtn->setIcon(QIcon(":/Drawer/pic/cansee.png"));
             nowSelect->setIcon(QIcon(":/Drawer/pic/cansee.png"));
             nowSelect->setBackground(QColor(211, 218, 219));
         }
@@ -423,10 +415,6 @@ void Drawer::pickColor_slot()
     if (nowSelect != nullptr) {
         QColor color = QColorDialog::getColor(Qt::white, this);
         nowSelect->setForeground(color);
-       
-        //nowSelect->setBackground(QBrush(color));
-        //drawFunction(" ", nowSelect->foreground().color());
-        
     }
 }
 
@@ -436,28 +424,13 @@ void Drawer::addDefine_slot() {
     item->setFont(QFont("Consolas", 15));
     item->setSizeHint(QSize(10, 30));
     item->setIcon(QIcon(":/Drawer/pic/define.png"));
-    //item->setBackground(QBrush(QColor(211, 218, 219)));
 
-
-    /*srand(time(NULL));
-    int x = rand() % 20;*/
-    //item->setForeground(Qt::GlobalColor(14));
-    //cout << item << endl;
     defineList->addItem(item);
-
-    /*QListWidgetItem* item2 = item;
-    showList->addItem(item2);*/
-    //cc++;
 }
 
 void Drawer::removeDefine_slot()
 {
     QListWidgetItem* nowSelect = defineList->currentItem();
-
-    /*if (nowSelect != nullptr) {
-        cout << nowSelect->text().toStdString() << endl;
-    }*/
-
     delete nowSelect;
 }
 

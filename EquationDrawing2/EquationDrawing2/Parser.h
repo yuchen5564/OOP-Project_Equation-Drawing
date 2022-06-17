@@ -10,11 +10,17 @@
 #include <Windows.h>
 #include <map>
 
+#define POINTSNUM 400
 
 using namespace std;
 
 
-
+typedef struct Point
+{
+    double x;
+    double y;
+    bool isInf = 0;
+} point;
 
 
 
@@ -22,20 +28,22 @@ using namespace std;
 //string splitString(string _in);
 
 
-class parser
+class Parser
 {
 private:
     // 函式儲存
     vector<string> functions;
+
     // 變數儲存  a , 15  -> a = 15
     map<string, double> variety;
 
     // 存結果
-    vector<double> resultY;
+    vector<Point> points;
+    //vector<double> resultY;
     // 計算暫存
     string s1, s2;
     // 圖形精度
-    double resolution = 0.1;
+    double resolution = 0.05;
 
     // 運算子優先權
     // 輸入: 數值字串或運算子字串
@@ -61,6 +69,18 @@ private:
 
     string power(string s1, string s2);
 
+    //                      函式內部運算
+    string functCalculate(string _function);
+
+
+
+
+    //                      三角函數
+    string sine(string str);
+    string cosine(string str);
+    string tange(string str);
+
+
     //            string double 互轉(無大數方式)
     // ====================================================
     double toDouble(string s);
@@ -73,10 +93,10 @@ private:
 public:
 
     // 計算
-    void calculate();
+    void calculate(string function, vector<Point>* points);
 
-    parser(/* args */);
-    ~parser();
+    Parser(/* args */);
+    ~Parser();
 
     // ========check
     void check();

@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <vector>
 #include <iostream>
+#include "Parser.h"
 using namespace std;
 
 class Drawer : public QWidget
@@ -17,8 +18,8 @@ class Drawer : public QWidget
 public:
     Drawer(QWidget *parent = Q_NULLPTR);
     void creatCoordinates(); //¹º¥X§¤¼Ð¨t
-    template<class T>
-    void drawFunction(T function = " ", QColor color = Qt::red);
+
+    void drawFunction(string function, QColor color);
 
     void paintEvent(QPaintEvent* event);
     void wheelEvent(QWheelEvent* event);
@@ -59,4 +60,6 @@ private:
     QPushButton* showFuncBtn, * pickColorBtn;
     QPushButton* addDefineBtn, * removeDefineBtn, * editDefineBtn;
     int cc = 0;
+
+    Parser parser;
 };

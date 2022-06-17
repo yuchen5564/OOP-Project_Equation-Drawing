@@ -3,19 +3,19 @@
 using namespace std;
 
 
-parser::parser()
+Parser::Parser()
 {
-	functions.resize(1);
-	this->functions[0] = "y = 1 /** x";
-	variety.insert(pair<string, double>("x", -10));
-	resultY.assign(200, 0);
+	//functions.resize(1);
+	//this->functions[0] = "y = tan(x) * sin(x)";
+	
+	//points.assign(200, {0,0,false});
 	
 }
 
-parser::~parser()
+Parser::~Parser()
 {}
 
-int parser::priority(string _in) {
+int Parser::priority(string _in) {
 	if (_in == "(") return 0;
 	if (_in == ")") return 1;
 
@@ -25,11 +25,17 @@ int parser::priority(string _in) {
 	if (_in == "/") return 3;
 	if (_in == "^") return 4;
 	if (_in == "!") return 5;
+	// 三角函數
+	if (_in.substr(0, 4) == "sin(") return 100;
+	if (_in.substr(0, 4) == "cos(") return 100;
+	if (_in.substr(0, 4) == "tan(") return 100;
+
+
 
 	return 999;
 }
 
-int parser::signC(char _in) {
+int Parser::signC(char _in) {
 	if (_in == '(') return 0;
 	if (_in == ')') return 1;
 
@@ -45,7 +51,7 @@ int parser::signC(char _in) {
 }
 
 
-double parser::toDouble(string s)
+double Parser::toDouble(string s)
 {
 	double result = 0;
 	sscanf_s(s.c_str(), "%lf", &result);
@@ -53,7 +59,7 @@ double parser::toDouble(string s)
 }
 
 // 可能有精度問題
-string parser::toString(double num)
+string Parser::toString(double num)
 {
 	
 	return to_string(num);
@@ -61,30 +67,222 @@ string parser::toString(double num)
 
 //										運算
 // ==============================================================================
-string parser::add(string s1, string s2)
+// 算三角函式括號內部
+string Parser::functCalculate(string _function)
+{
+
+	// 暫存 運算元的stack
+	stack <string> tmp;
+	// 紀錄是否有error出現
+	bool errorCode = 0;
+	// for test
+	_function.erase(0, 4);
+	_function.erase(_function.size()-1, 1);
+	
+	int temp = 0;
+	string postfix = infix2posfix(_function, &temp);
+	//cout << postfix;
+
+	// 目前運算子
+	string s;
+
+	istringstream in(postfix);
+
+	while (!errorCode && in >> s)
+	{
+		switch (priority(s))
+		{
+		case 2: case 3: case 4:
+
+			// 算式不合法
+			// 2022.04.27 [新增] error code: 算式不合法(ex. 123+++)
+			if (tmp.empty())
+			{
+				errorCode = 1;
+				ERROR("Please confirm the formula!");
+				break;
+			}
+			else
+			{
+				s2 = tmp.top();
+				tmp.pop();
+			}
+
+			// 算式不合法
+			// 2022.04.25 [新增] error code : 算式不合法(1*/3)
+			if (tmp.empty())
+			{
+				errorCode = 1;
+				ERROR("Please confirm the formula!");
+				break;
+			}
+			else
+			{
+				s1 = tmp.top(); //接收第二個數
+				tmp.pop();
+			}
+
+			// 算式運算 
+			if (s == "+")
+			{
+				tmp.push(add(s1, s2));
+			}
+			else if (s == "-")
+			{
+				tmp.push(sub(s1, s2));
+			}
+			else if (s == "*")
+			{
+				tmp.push(multi(s1, s2));
+			}
+			else if (s == "/")
+			{
+				//如果分母是0，輸出Error
+				if (s2 == "0" || s2 == "0.0") { //2022.04.21 [新增] Error Code
+					errorCode = 1;
+					ERROR("Divisor cannot be zero!");
+					//cout << "[Error] Divisor cannot be zero!\n";
+				}
+				//分母不是0
+				else {
+					tmp.push(divide(s1, s2)); //2022.04.22 By ming.
+				}
+
+			}
+			else if (s == "^")
+			{
+
+				tmp.push(power(s1, s2));
+			}
+
+
+			break;
+		case 100:	// 三角函數
+			if (s.substr(0, 4) == "sin(")					// sin 運算
+			{
+
+			}
+			else if (s.substr(0, 4) == "cos(")				// cos 運算
+			{
+
+			}
+			else											// tan 運算
+			{
+
+			}
+			break;
+
+
+
+
+		default:// 輸入不是符號
+			/*cout << "\ntest\n";*/
+			// 清除開頭+
+			if (s[0] == '+') s.erase(0, 1);
+
+			int len = s.length();
+			bool flag = 1;
+
+			//判斷是否有非數字字元
+			for (int i = 0; i < len; i++) {
+				if (s[0] == '-') break;
+				if (s.find(".") != string::npos) break;
+				if (!isdigit(s[i])) {
+					flag = 0;
+					break;
+				}
+			}
+
+			//都是數字，放入堆疊
+			if (flag) tmp.push(s);
+			//非全數字，檢查變數
+			else {
+
+				// 找定義過的變數或 x
+				auto mapIt = variety.find(s); // variety 找到變數的跌代器
+				if (mapIt != variety.end())
+				{
+					double mapValue = mapIt->second;
+					//	cout << "\nx = " << mapValue << endl;
+					s = toString(mapValue);
+					/*cout << "check:|" << s << "|\n";*/
+					tmp.push(s);
+
+				}
+				// 沒找到
+				else
+				{
+					ERROR("\"" + s + "\" variable not found!");
+					//cout << "[Error] \"" << s << "\" variable not found!\n";
+					errorCode = 1;
+
+
+				}
+
+
+			}
+
+
+			break;
+		}
+
+
+	}
+	// 回傳結果
+	
+	if (!errorCode)
+	{
+		return tmp.top();
+	}
+	return "error";
+
+}
+
+string Parser::add(string s1, string s2)
 {
 	double result = toDouble(s1) + toDouble(s2);
 	return toString(result);
 }
-string parser::sub(string s1, string s2)
+string Parser::sub(string s1, string s2)
 {
 	double result = toDouble(s1) - toDouble(s2);
 	return toString(result);
 }
-string parser::multi(string s1, string s2)
+string Parser::multi(string s1, string s2)
 {
 	double result = toDouble(s1) * toDouble(s2);
 	return toString(result);
 }
-string parser::divide(string s1, string s2)
+string Parser::divide(string s1, string s2)
 {
 	double result = toDouble(s1) / toDouble(s2);
 	return toString(result);
 }
-string parser::power(string s1, string s2)
+string Parser::power(string s1, string s2)
 {
 	double result = pow(toDouble(s1), toDouble(s2));
 	return toString(result);
+}
+
+
+string Parser::sine(string str)
+{
+	double num = toDouble(str);
+
+	return toString(sin(num));
+
+}
+
+string Parser::cosine(string str)
+{
+	double num = toDouble(str);
+	return toString(cos(num));
+}
+string Parser::tange(string str)
+{
+	//cout << "check:|" << str << "|\n";
+	double num = toDouble(str);
+	return toString(tan(num));
 }
 
 //						作分割字串(無區隔符號的實踐)
@@ -139,7 +337,7 @@ string parser::power(string s1, string s2)
 // ======================================================================
 
 //2022.04.21 [修復] 正負號error問題
-string parser::infix2posfix(string _infix, int* f) {
+string Parser::infix2posfix(string _infix, int* f) {
 	//2022.04.22 [新增] 輸入無空格，先分隔運算元與元素
 
 	if (_infix[0] == '-') {
@@ -192,7 +390,7 @@ string parser::infix2posfix(string _infix, int* f) {
 		case 3: case 4: case 5:
 			//2022.04.23 [修正] 1/3*3 = 0.99999...  //TO-DO: 1/3+2/3
 			//2022.04.25 [修正] stack empty error
-			if (!tmp.empty() && s == "*" && tmp.top() == "/") {
+			/*if (!tmp.empty() && s == "*" && tmp.top() == "/") {
 				string v = postfix.top();
 				postfix.pop();
 				postfix.push(snext);
@@ -200,7 +398,7 @@ string parser::infix2posfix(string _infix, int* f) {
 				postfix.push(v);
 				i++;
 				break;
-			}
+			}*/
 
 			while (!tmp.empty() && priority(tmp.top()) >= priority(s)) {
 				postfix.push(tmp.top());
@@ -219,6 +417,9 @@ string parser::infix2posfix(string _infix, int* f) {
 				tmp.pop();
 			}
 			tmp.pop();
+			break;
+		case 100:	// 三角函數
+			postfix.push(s);
 			break;
 		case 999: //非運算符號
 			//處理正負號
@@ -247,42 +448,40 @@ string parser::infix2posfix(string _infix, int* f) {
 // new update (for project 3)
 
 
-void parser::calculate()
+void Parser::calculate(string function, vector<Point>* points)
 {
-	
+	variety.clear();
+	variety.insert(pair<string, double>("x", -10));
 	// 等於位置
-	int findequal = functions[0].find("=");
+	int findequal = function.find("=");
 	// 等於之後的式
-	functions[0] = functions[0].substr(findequal + 2, functions.size() - findequal - 2);
+	function = function.substr(findequal + 2, function.size() - findequal - 2);
 	//暫存stack
 	stack<string> tmp;
 	//紀錄是否有error出現
 	bool errorCode = 0; 
 
 	// for test
-	cout << functions[0] << endl;
+	//cout << functions[0] << endl;
 
 	int temp = 0;
-	string postfix = infix2posfix(functions[0], &temp);
-	cout << postfix;
+	string postfix = infix2posfix(function, &temp);
+	//cout << postfix;
 
 	// 目前運算子
 	string s;
 
 
 	// 跑x
-	for (int i = 0; i < 200; i++)
+	for (int i = 0; i < POINTSNUM; i++)
 	{
 		istringstream in(postfix);
-
+		// 隱函式運算結果
+		string preResult = "";
 		while ( !errorCode && in >> s)
 		{
 			//cout << s << " ";
-			//// 解決S 空值問題
-			//if (s.empty())
-			//{
-			//	break;
-			//}
+			
 
 			switch (priority(s))
 			{
@@ -351,11 +550,33 @@ void parser::calculate()
 
 
 				break;
+			case 100:	// 三角函數
+				// 隱函式運算結果
+				preResult = functCalculate(s);
+				
+				if (preResult != "error")		// 內容無錯誤數學式
+				{
+					if (s.substr(0, 4) == "sin(")					// sin 運算
+					{
+						tmp.push(sine(preResult));
+					}
+					else if (s.substr(0, 4) == "cos(")				// cos 運算
+					{
+						tmp.push(cosine(preResult));
+					}
+					else											// tan 運算
+					{
+						tmp.push(tange(preResult));
+					}
 
 
+				}
+
+
+				break;
 			default: // 輸入不是符號
 				
-				//清除開頭+
+				// 清除開頭+
 				if (s[0] == '+') s.erase(0, 1);
 
 				int len = s.length();
@@ -407,7 +628,7 @@ void parser::calculate()
 		}
 		if (!errorCode)
 		{
-			resultY[i] = toDouble(tmp.top());
+			points->push_back({ variety["x"] ,toDouble(tmp.top()) });
 			tmp.pop();
 			
 		}
@@ -420,17 +641,17 @@ void parser::calculate()
 
 }
 
-void parser::check()
+void Parser::check()
 {
-	for (auto It = resultY.begin(); It != resultY.end(); It++)
+	for (auto It = points.begin(); It != points.end(); It++)
 	{
-		cout << *It << " ";
+		cout << "{" << It->x << " , " << It->y << "}\n";
 	}
 
 
 }
 
-void parser::checkStack(stack <string> t) 
+void Parser::checkStack(stack <string> t) 
 {
 	cout << "now stack have " << t.size() << endl;
 }
