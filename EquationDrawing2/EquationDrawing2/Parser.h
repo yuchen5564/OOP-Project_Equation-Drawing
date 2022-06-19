@@ -10,7 +10,7 @@
 #include <Windows.h>
 #include <map>
 
-#define POINTSNUM 400
+#define POINTSNUM 800
 
 #define SIN 1
 #define COS 2

@@ -86,7 +86,7 @@ void Parser::xReset(vector<Variable>::iterator* x, string rightSign)
 		}
 
 	}
-	variety.push_back({ rightSign, "-10" });
+	variety.push_back({ rightSign, "-20" });
 	*x = variety.end() - 1;
 }
 
@@ -128,6 +128,9 @@ bool Parser::setVariable(string _in)
 		//接收其他資訊
 		in >> tmp;
 		var.name = tmp;
+		if (!((tmp >= "A" && tmp <= "Z") || (tmp >= "a" && tmp <= "z"))) {
+			errorCode = 1;
+		}
 		in >> tmp;
 
 		while (in >> tmp) {
@@ -185,8 +188,10 @@ bool Parser::setVariable(string _in)
 			value.erase(value.begin());
 			cout << "now value:" << value << endl;
 			var.value = functCalculate(value); //計算數值
-
-			if (var.value != "Error") {
+			if (var.value == "error") {
+				errorCode = 1;
+			}
+			if (var.value != "error") {
 				//cout << "test3";
 				//尋找是否已存在
 				bool find = 0;
@@ -220,7 +225,7 @@ bool Parser::setVariable(string _in)
 	}
 
 	//2022.04.27 [修改] 輸出列表時機
-	//if (!errorCode) showVariale();
+	if (!errorCode) showVariale();
 	if (!errorCode) {
 		return true;
 	}
