@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdlib> /* 亂數相關函數 */
 #include <ctime>   /* 時間相關函數 */
+#include <QGraphicsItem>
 
 using namespace std;
 
@@ -17,10 +18,11 @@ Drawer::Drawer(QWidget *parent)
     
     setWindowTitle("Equation Drawing");
     setWindowIcon(QIcon(":/Drawer/pic/icon2.png"));
+    setFixedSize(1200, 600); //設定視窗大小
 
     pImg = new QPixmap(800, 600);
     pImg->fill();
-
+    
     /*=== 函數 ===*/
     funcList = new QListWidget(this);
     funcList->setGeometry(800, 40, 400, 300);
@@ -77,8 +79,6 @@ Drawer::Drawer(QWidget *parent)
     editDefineBtn->setIconSize(QSize(30, 30));
     editDefineBtn->setToolTip("編輯變數");
 
-    setFixedSize(1200, 600); //設定視窗大小
-
     connect(addFuncBtn, SIGNAL(clicked(bool)), this, SLOT(addFunction_slot()));
     connect(removeFuncBtn, SIGNAL(clicked(bool)), this, SLOT(removeFunction_slot()));
     connect(editFuncBtn, SIGNAL(clicked(bool)), this, SLOT(editFunction_slot()));
@@ -108,28 +108,25 @@ void Drawer::creatCoordinates()
     //memo: 網格格線依放大倍率調整
     painter.setPen(QPen(QColor(188, 194, 204))); //灰色筆刷
 
+    //倍數
     int step = 40 * scroll;
     if (scroll == 0.5) {
         step *= 4;
     }
     
-    //cout << step << endl;
-    for (int i = 1; i <= 800 + abs(400 - mid.x() - movePos.x()); i+=step) //x軸方向線條
+    for (int i = 1; i <= 800 + abs(400 - mid.x() - movePos.x()); i+=step) //y軸方向線條
     {
-        //cout << i << endl;
-        int line = abs(300 - mid.y() - movePos.y());
+        int line = abs(300 - mid.y() - movePos.y()); //位移參數
         if (step > 100) {
             painter.drawLine(i - step / 2, -h - line, i - step / 2, h + line);
             painter.drawLine(-i - step / 2, -h - line, -i - step / 2, h + line);
         }
-        
             painter.drawLine(i, -h - line, i, h + line);
             painter.drawLine(-i, -h - line, -i, h + line);
-        
     }
-    for (int i = 1; i <= 600 + abs(300 - mid.y() - movePos.y()); i += step) //y軸方向線條
+    for (int i = 1; i <= 600 + abs(300 - mid.y() - movePos.y()); i += step) //x軸方向線條
     {
-        int line = abs(400 - mid.x() - movePos.x());
+        int line = abs(400 - mid.x() - movePos.x()); //位移參數
         if (step > 100) {
             painter.drawLine(-w - line, i - step / 2, w + line, i - step / 2);
             painter.drawLine(-w - line, -i - step / 2, w + line, -i - step / 2);
@@ -140,10 +137,18 @@ void Drawer::creatCoordinates()
 
 
     painter.setPen(QPen(Qt::black,3)); //黑色筆刷，寬度3
+
     painter.drawLine(0, -h - abs(300 - mid.y() - movePos.y()), 0, h + abs(300 - mid.y() - movePos.y())); // 繪製X軸
     painter.drawLine(-w - abs(400 - mid.x() - movePos.x()), 0, w + abs(400 - mid.x() - movePos.x()), 0); // 繪製Y軸
-    painter.setFont(QFont("微軟正黑體",16));
-    
+
+    //在原點標記一個斜體字母O
+    QFont font("Times", 16);
+    font.setItalic(true);
+    painter.drawText(1, -1, "O");
+    font.setItalic(false);
+
+    painter.setFont(QFont("微軟正黑體", 16));
+
     //繪製刻度
     int counter = 0;
     for (int i = 1; i <= 800 + abs(400 - mid.x() - movePos.x()); i += step) //x軸上刻度
@@ -156,9 +161,7 @@ void Drawer::creatCoordinates()
         painter.drawLine(i, 0, i, 8);//X軸正向刻度，箭頭的邊長設為8個畫素
         painter.drawText(i, 0, QString::number(counter * scroll2)); //X軸正向刻度座標
         painter.drawLine(-i, 0, -i, 8); //X軸負向刻度
-        painter.drawText(-i, 0, QString::number(-counter * scroll2)); //X軸負向刻度座標 //* stepX
-       
-        
+        painter.drawText(-i, 0, QString::number(-counter * scroll2)); //X軸負向刻度座標 
         counter++;
     }
     counter = 0;
@@ -175,11 +178,7 @@ void Drawer::creatCoordinates()
         counter++;
     }
 
-    //在原點標記一個斜體字母O
-    QFont font("Times", 16);
-    font.setItalic(true);
-    painter.setFont(font);
-    painter.drawText(1, -1, "O");
+    
 }
 
 //繪製函數(sys)
@@ -194,16 +193,19 @@ void Drawer::paintEvent(QPaintEvent* event)
 
     pImg->fill();
 
-    //繪製到pImg
-    creatCoordinates();
-    //drawFunction(" ", Qt::darkGreen);    
-    //cout << showList->count() << endl;
+    creatCoordinates(); //繪製坐標軸
+
+    //繪製函數圖形
     for (int i = 0; i < funcList->count(); i++) {
-        if (funcList->item(i)->background() != QColor(255,255,255)) { //以背景顏色來判別是否顯示
-            drawFunction(funcList->item(i)->text().toStdString(), funcList->item(i)->foreground().color());
+        if (funcList->item(i)->background() != QColor(255, 255, 255)) { //以背景顏色來判別是否顯示
+            if (!drawFunction(funcList->item(i)->text().toStdString(), funcList->item(i)->foreground().color())) {
+                funcList->item(i)->setBackground(QColor(232, 107, 107)); //格式錯誤
+            }
+            else {
+                funcList->item(i)->setBackground(QColor(211, 218, 219)); //格式正確
+            }
         }
     }
-
 
     //繪製到視窗
     QPainter p(this);
@@ -211,17 +213,15 @@ void Drawer::paintEvent(QPaintEvent* event)
     update();
 }
 
-void Drawer::drawFunction(string function, QColor color)
+bool Drawer::drawFunction(string function, QColor color)
 {
     
     vector<Point> point;
     point.clear();
-    //cout << "========================================\n";
-    parser.calculate(function, &point);
-    //vector<Point>::iterator i;
-    /*for (i = point.begin(); i != point.end(); i++) {
-        cout << i->x << "\t" << i->y << endl;
-    }*/
+
+    if (!parser.calculate(function, &point)) {
+        return false;
+    }
 
     qreal mult = 40 * scroll;  //放大倍數
     if (scroll == 0.5) {
@@ -230,20 +230,9 @@ void Drawer::drawFunction(string function, QColor color)
     vector<QPointF>points;
     vector<Point>::iterator i;
     for (i = point.begin(); i != point.end(); i++) {
+        //cout << i->x << "\t" << i->y << endl;
         points.push_back({ i->x * mult,i->y * mult * (-1)});
     }
-    /*=== For Test (begin) ===*/
-    /*
-    double t = -40, y;
-    for (int i = 0; i < 1600; i++) {
-        y = -pow(sin(t),cos(t));
-        
-        points.push_back({ t * mult,y * mult});
-        //cout << points << endl;
-        t += 0.05;
-    }*/
-
-    /*=== For Test (end) ===*/
     
     /*=== [Warnning] 以下請勿刪除！ ===*/
 
@@ -268,7 +257,11 @@ void Drawer::drawFunction(string function, QColor color)
         QPointF c1 = (QPointF((sp.x() + ep.x()) / 2, (sp.y() + ep.y()) / 2));
         //QPointF c2 = c1;
         
-        
+        if (isinf(sp.y())) {
+            painter.drawPath(path); //劃出路徑
+            path.clear();
+            path = QPainterPath(points[i + 1]);
+        }
 
         if (sp.y() >= 0 && ep.y() <= 0 && sp.y()-ep.y()>10*mult) { //分母=0 Type 1
             //cout << "..\n";
@@ -289,17 +282,19 @@ void Drawer::drawFunction(string function, QColor color)
     }
     painter.drawPath(path); //劃出路徑
     
+    return true;
 
     /*=== [Warnning] 以上請勿刪除！ ===*/
 }
 
 //滾輪放大
-//memo: 滑鼠位置放大縮小尚未實作
 void Drawer::wheelEvent(QWheelEvent* event)
 {
     if (event->position().x() < 800) { //超出版面(pImg)之動作不進行
         pImg->fill();
-        if (scroll == 0.5) {
+        
+        //先調整基本倍數，再調整次倍數
+        if (scroll == 0.5) { 
             scroll = 0.5;
             if (event->angleDelta().y() > 0) {
                 if (scroll2 == 1) scroll += 0.5;
@@ -313,9 +308,8 @@ void Drawer::wheelEvent(QWheelEvent* event)
             if (event->angleDelta().y() > 0) scroll = scroll + 0.5;
             if (event->angleDelta().y() < 0) scroll = scroll - 0.5;
         }
-        cout << scroll <<" "<<scroll2 << endl;
+        
     }
-    
 }
 
 //滑鼠點擊
@@ -348,12 +342,12 @@ void Drawer::mouseMoveEvent(QMouseEvent* event)
 
 void Drawer::addFunction_slot() {
     QListWidgetItem* item = new QListWidgetItem("y = x");
-    item->setFont(QFont("Consolas", 15));
+    item->setFont(QFont("Consolas", 12));
     item->setSizeHint(QSize(10, 30));
     item->setIcon(QIcon(":/Drawer/pic/cansee.png"));
     item->setBackground(QBrush(QColor(211, 218, 219)));
-    
     item->setForeground(Qt::GlobalColor(14));
+
     funcList->addItem(item);
     //cc++;
 }
@@ -426,12 +420,34 @@ void Drawer::addDefine_slot() {
     item->setIcon(QIcon(":/Drawer/pic/define.png"));
 
     defineList->addItem(item);
+
+    parser.clearVariety();
+    for (int i = 0; i < defineList->count(); i++) {
+        if (!parser.setVariable(defineList->item(i)->text().toStdString())) {
+            defineList->item(i)->setBackground(QColor(232, 107, 107)); //格式錯誤
+        }
+        else {
+            defineList->item(i)->setBackground(QColor(211, 218, 219)); //格式正確
+        }
+    }
+
+    
 }
 
 void Drawer::removeDefine_slot()
 {
     QListWidgetItem* nowSelect = defineList->currentItem();
     delete nowSelect;
+
+    parser.clearVariety();
+    for (int i = 0; i < defineList->count(); i++) {
+        if (!parser.setVariable(defineList->item(i)->text().toStdString())) {
+            defineList->item(i)->setBackground(QColor(232, 107, 107)); //格式錯誤
+        }
+        else {
+            defineList->item(i)->setBackground(QColor(211, 218, 219)); //格式正確
+        }
+    }
 }
 
 void Drawer::editDefine_slot()
@@ -446,12 +462,14 @@ void Drawer::editDefine_slot()
             lastSelect = nowSelect;
             flag = 0;
             editDefineBtn->setIcon(QIcon(":/Drawer/pic/check.png"));
+
         }
         else {
             if (nowSelect != lastSelect) {
                 defineList->closePersistentEditor(lastSelect);
                 defineList->openPersistentEditor(nowSelect);
                 lastSelect = nowSelect;
+
             }
             else {
                 defineList->closePersistentEditor(nowSelect);
@@ -459,6 +477,16 @@ void Drawer::editDefine_slot()
                 editDefineBtn->setIcon(QIcon(":/Drawer/pic/edit2.png"));
             }
 
+        }
+
+        parser.clearVariety();
+        for (int i = 0; i < defineList->count(); i++) {
+            if (!parser.setVariable(defineList->item(i)->text().toStdString())) {
+                defineList->item(i)->setBackground(QColor(232, 107, 107)); //格式錯誤
+            }
+            else {
+                defineList->item(i)->setBackground(QColor(211, 218, 219)); //格式正確
+            }
         }
     }
 }

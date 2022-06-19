@@ -12,6 +12,10 @@
 
 #define POINTSNUM 400
 
+#define SIN 1
+#define COS 2
+#define TAN 3
+
 using namespace std;
 
 
@@ -28,18 +32,39 @@ typedef struct Point
 //string splitString(string _in);
 
 
+typedef struct {
+    //string dataType; //變數型態
+    string name; //變數名稱
+    string value; //數值		//2022.4.20 [更改] 型別
+}Variable;
+
+
 class Parser
 {
 private:
-    // 函式儲存
+    // ==================變數相關====================
+     // 函式儲存
     vector<string> functions;
 
     // 變數儲存  a , 15  -> a = 15
-    map<string, double> variety;
+    vector<Variable> variety;
+    // 變數設定
+    
+    //                          setVariable專用
+    //===============================================================
 
+    vector<string> left;
+    vector<string> right;
+    vector<int> checkCirculate;
+    void showVariale(); //列印儲存的變數
+    //===============================================================
+    // 初始化變數 x 的位置
+    // 引數 : iterator 的指標(指向x變數的iterator)
+    void xReset(vector<Variable>::iterator* x,string rightSign);
     // 存結果
     vector<Point> points;
-    //vector<double> resultY;
+
+    // ===================計算分析相關===================
     // 計算暫存
     string s1, s2;
     // 圖形精度
@@ -93,7 +118,9 @@ private:
 public:
 
     // 計算
-    void calculate(string function, vector<Point>* points);
+    bool calculate(string function, vector<Point>* points);
+    bool setVariable(string _in); // 設定變數
+    void clearVariety();
 
     Parser(/* args */);
     ~Parser();
