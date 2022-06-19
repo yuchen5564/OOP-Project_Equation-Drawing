@@ -220,7 +220,7 @@ bool Parser::setVariable(string _in)
 	}
 
 	//2022.04.27 [修改] 輸出列表時機
-	if (!errorCode) showVariale();
+	//if (!errorCode) showVariale();
 	if (!errorCode) {
 		return true;
 	}
@@ -583,6 +583,9 @@ string Parser::infix2posfix(string _infix, int* f) {
 				tmp.push(s);
 				break;
 			case 1:	// ")"
+				if (tmp.empty()) {
+					return "error";
+				}
 				while (tmp.top() != "(") {
 					postfix.push(tmp.top());
 					tmp.pop();
@@ -707,6 +710,9 @@ bool Parser::calculate(string function, vector<Point>* points)
 	{
 		// 效能變差的主因
 		string postfix = infix2posfix(function, &temp);		// update: 2022.06.19  by ming
+		if (postfix == "error") {
+			return false;
+		}
 		//cout << postfix;
 		istringstream in(postfix);
 		// 隱函式運算結果
@@ -862,6 +868,7 @@ bool Parser::calculate(string function, vector<Point>* points)
 						ERROR("\"" + s + "\" variable not found!");
 						//cout << "[Error] \"" << s << "\" variable not found!\n";
 						errorCode = 1;
+						return false;
 					}
 				}
 
