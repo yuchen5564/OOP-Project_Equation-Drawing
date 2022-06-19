@@ -227,50 +227,38 @@ bool Drawer::drawFunction(string function, QColor color)
     if (scroll == 0.5) {
         mult =  80 / scroll2;
     }
+
     vector<QPointF>points;
     vector<Point>::iterator i;
     for (i = point.begin(); i != point.end(); i++) {
-        //cout << i->x << "\t" << i->y << endl;
         points.push_back({ i->x * mult,i->y * mult * (-1)});
     }
-    
-    /*=== [Warnning] 以下請勿刪除！ ===*/
 
     QPainterPath path(points[0]);
     QPainter painter(pImg);
-    
     painter.translate(400 - mid.x() - movePos.x(), 300 - mid.y() - movePos.y()); //設置中心點
     painter.setRenderHint(QPainter::Antialiasing, true); //反鋸齒
     painter.setPen(QPen(color, 2));
+
     for (int i = 0; i < points.size() - 1; ++i)
     {
         
         QPointF sp = points[i];
-        if (isnan(sp.y())) {
-            painter.drawPath(path); //劃出路徑
-            path.clear();
-            path = QPainterPath(points[i + 1]);
-            continue;
-        }
-        //cout << sp.x() << "\t" << sp.y() << endl;
         QPointF ep = points[i + 1];
         QPointF c1 = (QPointF((sp.x() + ep.x()) / 2, (sp.y() + ep.y()) / 2));
-        //QPointF c2 = c1;
-        
-        if (isinf(sp.y())) {
+
+        if (isinf(sp.y()) || isnan(sp.y())) {
             painter.drawPath(path); //劃出路徑
             path.clear();
             path = QPainterPath(points[i + 1]);
         }
 
         if (sp.y() >= 0 && ep.y() <= 0 && sp.y()-ep.y()>10*mult) { //分母=0 Type 1
-            //cout << "..\n";
             painter.drawPath(path); //劃出路徑
             path.clear();
             path = QPainterPath(points[i + 1]);
         }
         else if (sp.y() <= 0 && ep.y() >= 0 && ep.y() - sp.y() > 10*mult) { //分母=0 Type 2
-            //cout << "..\n";
             painter.drawPath(path); //劃出路徑
             path.clear();
             path = QPainterPath(points[i + 1]);
@@ -280,11 +268,9 @@ bool Drawer::drawFunction(string function, QColor color)
         }
 
     }
-    painter.drawPath(path); //劃出路徑
-    
-    return true;
 
-    /*=== [Warnning] 以上請勿刪除！ ===*/
+    painter.drawPath(path); //劃出路徑
+    return true;
 }
 
 //滾輪放大

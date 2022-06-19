@@ -536,7 +536,8 @@ string Parser::infix2posfix(string _infix, int* f) {
 				{
 					postfix.push("tan(" + value + ")");
 				}
-				triFunctionReceive = false;
+				triFunctionReceive = false;		// 結束接收
+				triFunctionEnd = true;
 			}
 			else
 			{
@@ -618,7 +619,7 @@ string Parser::infix2posfix(string _infix, int* f) {
 					if (s[3] != '(')	// 代表三角函數的運算式有錯
 					{
 						// 三角函數錯誤格式處理
-						return "ERROR";
+						return "error";				// 小修正 2022/06/19 by ming
 					}
 					else
 					{
@@ -658,6 +659,13 @@ string Parser::infix2posfix(string _infix, int* f) {
 			}
 		}
 	}
+
+	// [格式error 處理] sin(x	. 2022.06.19 by ming
+	if (triFunctionReceive && !triFunctionEnd)
+	{
+		return "error";
+	}
+
 	while (!tmp.empty()) {
 		postfix.push(tmp.top());
 		tmp.pop();
@@ -669,7 +677,6 @@ string Parser::infix2posfix(string _infix, int* f) {
 	//cout << result << endl;
 	return result;
 }
-
 //						計算點的位置
 // ========================================================
 // new update (for project 3)
